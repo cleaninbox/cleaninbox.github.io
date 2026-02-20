@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CleanInbox — Clean Your Gmail in Minutes</title>
+  <meta name="description" content="Scan your Gmail inbox, categorize newsletters and promotions, and bulk-delete emails to free up storage. Private, fast, and free to start." />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <style>
+    /* ─── Custom properties ─────────────────────────────── */
+    :root {
+      --brand-50:  #eef2ff;
+      --brand-100: #e0e7ff;
+      --brand-500: #6366f1;
+      --brand-600: #4f46e5;
+      --brand-700: #4338ca;
+    }
+
+    /* ─── Base resets ───────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+
+    /* ─── Scroll-reveal animation ───────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+    .reveal-delay-4 { transition-delay: 0.4s; }
+
+    /* ─── Hero gradient mesh ─────────────────────────────── */
+    .hero-gradient {
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 40% at 80% 50%, rgba(79,70,229,0.06) 0%, transparent 60%),
+        #ffffff;
+    }
+
+    /* ─── Grid pattern overlay ───────────────────────────── */
+    .grid-overlay {
+      background-image:
+        linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    /* ─── CTA button pulse ring ──────────────────────────── */
+    @keyframes pulse-ring {
+      0%   { transform: scale(1);   opacity: 0.6; }
+      100% { transform: scale(1.6); opacity: 0;   }
+    }
+    .btn-primary {
+      position: relative;
+    }
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: #4f46e5;
+      animation: pulse-ring 2.4s cubic-bezier(0.36, 0.11, 0.89, 0.32) infinite;
+      pointer-events: none;
+    }
+
+    /* ─── Step connector line ────────────────────────────── */
+    .step-connector::after {
+      content: '';
+      position: absolute;
+      top: 28px;
+      left: calc(50% + 32px);
+      width: calc(100% - 64px);
+      height: 2px;
+      background: linear-gradient(90deg, #e0e7ff, #c7d2fe);
+    }
+
+    /* ─── Feature card hover lift ────────────────────────── */
+    .feature-card {
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                  box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(99,102,241,0.12), 0 4px 12px rgba(0,0,0,0.06);
+    }
+
+    /* ─── Pricing card recommended glow ─────────────────── */
+    .pricing-recommended {
+      box-shadow: 0 0 0 2px #6366f1,
+                  0 20px 60px rgba(99,102,241,0.20),
+                  0 4px 16px rgba(0,0,0,0.08);
+    }
+
+    /* ─── Nav scroll effect ──────────────────────────────── */
+    .nav-scrolled {
+      box-shadow: 0 1px 0 rgba(0,0,0,0.06),
+                  0 4px 16px rgba(0,0,0,0.04);
+      backdrop-filter: blur(12px);
+      background: rgba(255,255,255,0.92) !important;
+    }
+
+    /* ─── Trust badge shimmer ────────────────────────────── */
+    @keyframes shimmer {
+      0%   { background-position: -200% center; }
+      100% { background-position:  200% center; }
+    }
+    .trust-badge {
+      background: linear-gradient(
+        90deg,
+        rgba(99,102,241,0.08) 0%,
+        rgba(99,102,241,0.16) 50%,
+        rgba(99,102,241,0.08) 100%
+      );
+      background-size: 200% auto;
+      animation: shimmer 3s linear infinite;
+    }
+  </style>
+</head>
+<body class="bg-white text-gray-900 antialiased">
+
+  <!-- ═══════════════════════════════════════════════════
+       NAVIGATION
+  ═══════════════════════════════════════════════════ -->
+  <header id="nav" class="fixed top-0 left-0 right-0 z-50 bg-white transition-all duration-300">
+    <nav class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <!-- Logo -->
+      <a href="/" class="flex items-center gap-2.5 group">
+        <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-sm group-hover:shadow-indigo-200 group-hover:shadow-md transition-shadow duration-200">
+          <svg class="w-4.5 h-4.5 text-white" viewBox="0 0 20 20" fill="currentColor" style="width:18px;height:18px;">
+            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+          </svg>
+        </div>
+        <span class="font-semibold text-gray-900 text-[15px] tracking-tight">CleanInbox</span>
+      </a>
+
+      <!-- Desktop links -->
+      <div class="hidden md:flex items-center gap-8">
+        <a href="#how-it-works" class="text-sm text-gray-500 hover:text-gray-900 transition-colors duration-150">How it works</a>
+        <a href="#features" class="text-sm text-gray-500 hover:text-gray-900 transition-colors duration-150">Features</a>
+        <a href="#pricing" class="text-sm text-gray-500 hover:text-gray-900 transition-colors duration-150">Pricing</a>
+        <a href="#privacy" class="text-sm text-gray-500 hover:text-gray-900 transition-colors duration-150">Privacy</a>
+      </div>
+
+      <!-- CTA -->
+      <a href="https://app.cleaninbox.cc/auth/login"
+         class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-150 shadow-sm hover:shadow-indigo-200 hover:shadow-md">
+        Get started
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+        </svg>
+      </a>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- ═══════════════════════════════════════════════════
+         HERO
+    ═══════════════════════════════════════════════════ -->
+    <section class="hero-gradient grid-overlay min-h-screen flex flex-col items-center justify-center pt-16 px-6 pb-24">
+
+      <!-- Trust pill -->
+      <div class="reveal mb-8">
+        <div class="trust-badge inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-indigo-700 text-xs font-medium border border-indigo-100">
+          <svg class="w-3.5 h-3.5 text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+          </svg>
+          Privacy-first — we never read your email content
+        </div>
+      </div>
+
+      <!-- Headline -->
+      <div class="reveal reveal-delay-1 text-center max-w-3xl">
+        <h1 class="text-5xl sm:text-6xl md:text-7xl font-bold text-gray-900 leading-[1.05] tracking-tight">
+          Clean your inbox
+          <span class="relative inline-block">
+            <span class="text-indigo-600">in minutes</span>
+            <svg class="absolute -bottom-2 left-0 w-full" viewBox="0 0 300 12" fill="none" preserveAspectRatio="none">
+              <path d="M2 8.5C60 3 120 1.5 150 2.5C180 3.5 240 5 298 8.5" stroke="#c7d2fe" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </span>
+        </h1>
+        <p class="mt-7 text-lg sm:text-xl text-gray-500 leading-relaxed max-w-2xl mx-auto">
+          Scan your Gmail inbox, see exactly what's eating your storage, and bulk-delete newsletters, promotions, and large attachments — safely, in one click.
+        </p>
+      </div>
+
+      <!-- CTA group -->
+      <div class="reveal reveal-delay-2 mt-10 flex flex-col sm:flex-row items-center gap-4">
+        <a href="https://app.cleaninbox.cc/auth/login"
+           class="btn-primary inline-flex items-center gap-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-8 py-4 rounded-xl text-base transition-all duration-150 shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300">
+          <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
+            <path fill="#fff" fill-opacity="0.85" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
+            <path fill="#fff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#fff" fill-opacity="0.7" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#fff" fill-opacity="0.85" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Get Started Free
+        </a>
+        <a href="#how-it-works"
+           class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors duration-150">
+          See how it works
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </a>
+      </div>
+
+      <!-- Social proof micro-copy -->
+      <div class="reveal reveal-delay-3 mt-8 flex items-center gap-2 text-xs text-gray-400">
+        <svg class="w-3.5 h-3.5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+        </svg>
+        Free to start — no credit card required
+        <span class="mx-2 text-gray-200">|</span>
+        <svg class="w-3.5 h-3.5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+        </svg>
+        Revoke access anytime from Google
+      </div>
+
+      <!-- Hero visual — inbox stats mockup -->
+      <div class="reveal reveal-delay-4 mt-16 w-full max-w-2xl">
+        <div class="bg-white rounded-2xl shadow-2xl shadow-indigo-100/60 border border-gray-100 overflow-hidden">
+          <!-- Window chrome -->
+          <div class="flex items-center gap-1.5 px-4 py-3 border-b border-gray-100 bg-gray-50/50">
+            <div class="w-3 h-3 rounded-full bg-red-300"></div>
+            <div class="w-3 h-3 rounded-full bg-yellow-300"></div>
+            <div class="w-3 h-3 rounded-full bg-green-300"></div>
+            <span class="ml-3 text-xs text-gray-400 font-mono">app.cleaninbox.cc</span>
+          </div>
+          <!-- Content -->
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-5">
+              <div>
+                <p class="text-xs text-gray-400 uppercase tracking-wider font-medium">Inbox scan complete</p>
+                <p class="text-2xl font-bold text-gray-900 mt-0.5">14.2 GB found</p>
+              </div>
+              <div class="text-right">
+                <p class="text-xs text-gray-400">3,847 emails scanned</p>
+                <p class="text-xs text-indigo-600 font-medium mt-0.5">Scan took 12s</p>
+              </div>
+            </div>
+            <!-- Category rows -->
+            <div class="space-y-3">
+              <!-- Promotions -->
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg class="w-4 h-4 text-orange-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2 6a2 2 0 012-2h8a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v1a1 1 0 00.553.894l1 .5A1 1 0 0017 9.5V7.5a1 1 0 00-.553-.894l-1-.5a1 1 0 00-.894.106z"/>
+                  </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="text-sm font-medium text-gray-700">Promotions</span>
+                    <span class="text-sm text-gray-500">4.8 GB</span>
+                  </div>
+                  <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-orange-400 rounded-full" style="width: 72%"></div>
+                  </div>
+                </div>
+              </div>
+              <!-- Newsletters -->
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg class="w-4 h-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zm0 16a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
+                  </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="text-sm font-medium text-gray-700">Newsletters</span>
+                    <span class="text-sm text-gray-500">2.1 GB</span>
+                  </div>
+                  <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-blue-400 rounded-full" style="width: 42%"></div>
+                  </div>
+                </div>
+              </div>
+              <!-- Large attachments -->
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg class="w-4 h-4 text-purple-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z" clip-rule="evenodd"/>
+                  </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="text-sm font-medium text-gray-700">Large attachments</span>
+                    <span class="text-sm text-gray-500">5.9 GB</span>
+                  </div>
+                  <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-purple-400 rounded-full" style="width: 88%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Action row -->
+            <div class="mt-5 flex items-center gap-3">
+              <button class="flex-1 bg-indigo-600 text-white text-sm font-medium py-2.5 rounded-lg cursor-default">
+                Delete selected (7.3 GB)
+              </button>
+              <button class="px-4 py-2.5 border border-gray-200 text-gray-600 text-sm font-medium rounded-lg cursor-default">
+                Review
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════
+         HOW IT WORKS
+    ═══════════════════════════════════════════════════ -->
+    <section id="how-it-works" class="py-24 px-6 bg-gray-50">
+      <div class="max-w-5xl mx-auto">
+
+        <!-- Section header -->
+        <div class="reveal text-center mb-16">
+          <p class="text-indigo-600 text-sm font-semibold uppercase tracking-widest mb-3">How it works</p>
+          <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">Three steps to a cleaner inbox</h2>
+          <p class="mt-4 text-gray-500 text-lg max-w-xl mx-auto">No configuration, no complexity. Connect and clean in under a minute.</p>
+        </div>
+
+        <!-- Steps grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+
+          <!-- Step 1 -->
+          <div class="reveal relative flex flex-col items-center text-center">
+            <div class="relative z-10">
+              <div class="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200 mb-6">
+                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                </svg>
+              </div>
+            </div>
+            <div class="absolute top-7 left-1/2 hidden md:block" style="width: calc(100% - 0px); height: 2px; background: linear-gradient(90deg, #c7d2fe 0%, #e0e7ff 100%); left: calc(50% + 36px); width: calc(100% - 72px);"></div>
+            <span class="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2">Step 1</span>
+            <h3 class="text-xl font-bold text-gray-900 mb-3">Connect Gmail</h3>
+            <p class="text-gray-500 leading-relaxed text-sm">Sign in with your Google account. We use OAuth 2.0 — we never see your password. Grant only the permissions shown.</p>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="reveal reveal-delay-1 relative flex flex-col items-center text-center">
+            <div class="relative z-10">
+              <div class="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200 mb-6">
+                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+              </div>
+            </div>
+            <div class="absolute top-7 left-1/2 hidden md:block" style="width: calc(100% - 72px); height: 2px; background: linear-gradient(90deg, #c7d2fe 0%, #e0e7ff 100%); left: calc(50% + 36px);"></div>
+            <span class="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2">Step 2</span>
+            <h3 class="text-xl font-bold text-gray-900 mb-3">Scan &amp; Categorize</h3>
+            <p class="text-gray-500 leading-relaxed text-sm">We scan email metadata in real-time — subject lines, senders, sizes — and group them into smart categories. No email content is ever read.</p>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="reveal reveal-delay-2 relative flex flex-col items-center text-center">
+            <div class="relative z-10">
+              <div class="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200 mb-6">
+                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </div>
+            </div>
+            <span class="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2">Step 3</span>
+            <h3 class="text-xl font-bold text-gray-900 mb-3">Review &amp; Delete</h3>
+            <p class="text-gray-500 leading-relaxed text-sm">Browse results, add items to your cart, and bulk-delete. Emails move to Trash first — nothing is permanently gone until you choose.</p>
+          </div>
+
+        </div>
+
+        <!-- Bottom note -->
+        <div class="reveal reveal-delay-3 mt-14 flex justify-center">
+          <div class="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-xl px-5 py-3 text-sm text-indigo-700">
+            <svg class="w-4 h-4 text-indigo-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+            </svg>
+            Average scan completes in under 15 seconds for most inboxes
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════
+         FEATURES
+    ═══════════════════════════════════════════════════ -->
+    <section id="features" class="py-24 px-6 bg-white">
+      <div class="max-w-5xl mx-auto">
+
+        <!-- Section header -->
+        <div class="reveal text-center mb-16">
+          <p class="text-indigo-600 text-sm font-semibold uppercase tracking-widest mb-3">Features</p>
+          <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">Everything you need to declutter</h2>
+          <p class="mt-4 text-gray-500 text-lg max-w-xl mx-auto">Built to surface exactly what's wasting your storage, and remove it safely.</p>
+        </div>
+
+        <!-- Feature grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+          <!-- Feature 1: Smart categorization -->
+          <div class="reveal feature-card bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+            <div class="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center mb-5">
+              <svg class="w-5 h-5 text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM14 11a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0v-1h-1a1 1 0 110-2h1v-1a1 1 0 011-1z"/>
+              </svg>
+            </div>
+            <h3 class="font-semibold text-gray-900 text-base mb-2">Smart categorization</h3>
+            <p class="text-gray-500 text-sm leading-relaxed">Automatically identifies newsletters, promotions, social notifications, and large attachments using Gmail's own labels and header analysis.</p>
+          </div>
+
+          <!-- Feature 2: Size-based cleanup -->
+          <div class="reveal reveal-delay-1 feature-card bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+            <div class="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center mb-5">
+              <svg class="w-5 h-5 text-purple-600" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h4a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+            <h3 class="font-semibold text-gray-900 text-base mb-2">Size-based cleanup</h3>
+            <p class="text-gray-500 text-sm leading-relaxed">Sort by storage impact. The biggest emails rise to the top so you can reclaim gigabytes with just a few clicks instead of hundreds.</p>
+          </div>
+
+          <!-- Feature 3: Safe deletion -->
+          <div class="reveal reveal-delay-2 feature-card bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+            <div class="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center mb-5">
+              <svg class="w-5 h-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+            <h3 class="font-semibold text-gray-900 text-base mb-2">Safe deletion</h3>
+            <p class="text-gray-500 text-sm leading-relaxed">Emails go to Trash first by default — giving you a 30-day recovery window. Permanent delete is opt-in only, always with a confirmation step.</p>
+          </div>
+
+          <!-- Feature 4: Real-time scan progress -->
+          <div class="reveal feature-card bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+            <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center mb-5">
+              <svg class="w-5 h-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+            <h3 class="font-semibold text-gray-900 text-base mb-2">Real-time progress</h3>
+            <p class="text-gray-500 text-sm leading-relaxed">Watch categories populate live as the scan runs. Server-Sent Events stream results as they arrive — no polling, no waiting for a full report.</p>
+          </div>
+
+          <!-- Feature 5: Privacy-first -->
+          <div class="reveal reveal-delay-1 feature-card bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+            <div class="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center mb-5">
+              <svg class="w-5 h-5 text-rose-600" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+            <h3 class="font-semibold text-gray-900 text-base mb-2">Privacy-first design</h3>
+            <p class="text-gray-500 text-sm leading-relaxed">We only ever access email metadata — subject, sender, date, size, and labels. Your email body and attachment contents are never read or stored.</p>
+          </div>
+
+          <!-- Feature 6: Bulk cart system -->
+          <div class="reveal reveal-delay-2 feature-card bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+            <div class="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center mb-5">
+              <svg class="w-5 h-5 text-orange-600" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3z"/>
+                <path d="M16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/>
+              </svg>
+            </div>
+            <h3 class="font-semibold text-gray-900 text-base mb-2">Bulk cart system</h3>
+            <p class="text-gray-500 text-sm leading-relaxed">Add individual emails, entire categories, or custom-filtered results to a cart. Review before committing — then delete everything in one batch operation.</p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════
+         PRICING
+    ═══════════════════════════════════════════════════ -->
+    <section id="pricing" class="py-24 px-6 bg-gray-50">
+      <div class="max-w-5xl mx-auto">
+
+        <!-- Section header -->
+        <div class="reveal text-center mb-16">
+          <p class="text-indigo-600 text-sm font-semibold uppercase tracking-widest mb-3">Pricing</p>
+          <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">Simple, transparent pricing</h2>
+          <p class="mt-4 text-gray-500 text-lg max-w-xl mx-auto">Start for free. Upgrade when you need more power.</p>
+        </div>
+
+        <!-- Pricing cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+
+          <!-- Free -->
+          <div class="reveal bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
+            <div class="mb-6">
+              <p class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Free</p>
+              <div class="flex items-end gap-1">
+                <span class="text-4xl font-bold text-gray-900">$0</span>
+                <span class="text-gray-400 text-sm mb-1.5">/month</span>
+              </div>
+              <p class="text-gray-500 text-sm mt-2">Get a real sense of what's in your inbox before committing.</p>
+            </div>
+            <a href="https://app.cleaninbox.cc/auth/login"
+               class="block w-full text-center bg-gray-900 hover:bg-gray-800 text-white font-medium py-2.5 rounded-lg text-sm transition-colors duration-150 mb-6">
+              Get started free
+            </a>
+            <ul class="space-y-3">
+              <li class="flex items-start gap-2.5 text-sm text-gray-600">
+                <svg class="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                Scan up to 5 categories
+              </li>
+              <li class="flex items-start gap-2.5 text-sm text-gray-600">
+                <svg class="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                See top 20 results per category
+              </li>
+              <li class="flex items-start gap-2.5 text-sm text-gray-600">
+                <svg class="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                Storage estimate per category
+              </li>
+              <li class="flex items-start gap-2.5 text-sm text-gray-400">
+                <svg class="w-4 h-4 text-gray-300 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                <span class="line-through">Bulk delete</span>
+              </li>
+              <li class="flex items-start gap-2.5 text-sm text-gray-400">
+                <svg class="w-4 h-4 text-gray-300 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                <span class="line-through">Advanced filters</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Basic — recommended -->
+          <div class="reveal reveal-delay-1 pricing-recommended bg-indigo-600 rounded-2xl p-8 relative -my-2">
+            <div class="absolute -top-3.5 left-1/2 -translate-x-1/2">
+              <span class="bg-indigo-500 text-white text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap border border-indigo-400">Most popular</span>
+            </div>
+            <div class="mb-6">
+              <p class="text-sm font-semibold text-indigo-200 uppercase tracking-wider mb-2">Basic</p>
+              <div class="flex items-end gap-1">
+                <span class="text-4xl font-bold text-white">$4</span>
+                <span class="text-indigo-200 text-sm mb-1.5">/month</span>
+              </div>
+              <p class="text-indigo-200 text-sm mt-2">Full access to browse and bulk-delete any category.</p>
+            </div>
+            <a href="https://app.cleaninbox.cc/auth/login"
+               class="block w-full text-center bg-white hover:bg-indigo-50 text-indigo-600 font-semibold py-2.5 rounded-lg text-sm transition-colors duration-150 mb-6">
+              Get started
+            </a>
+            <ul class="space-y-3">
+              <li class="flex items-start gap-2.5 text-sm text-indigo-100">
+                <svg class="w-4 h-4 text-indigo-300 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                All 8 categories, full results
+              </li>
+              <li class="flex items-start gap-2.5 text-sm text-indigo-100">
+                <svg class="w-4 h-4 text-indigo-300 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                Bulk delete by category
+              </li>
+              <li class="flex items-start gap-2.5 text-sm text-indigo-100">
+                <svg class="w-4 h-4 text-indigo-300 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                Size-sorted email lists
+              </li>
+              <li class="flex items-start gap-2.5 text-sm text-indigo-100">
+                <svg class="w-4 h-4 text-indigo-300 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                Cart-based review &amp; delete
+              </li>
+              <li class="flex items-start gap-2.5 text-sm text-indigo-200">
+                <svg class="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                <span class="line-through opacity-60">Advanced filters</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Pro -->
+          <div class="reveal reveal-delay-2 bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
+            <div class="mb-6">
+              <p class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Pro</p>
+              <div class="flex items-end gap-1">
+                <span class="text-4xl font-bold text-gray-900">$9</span>
+                <span class="text-gray-400 text-sm mb-1.5">/month</span>
+              </div>
+              <p class="text-gray-500 text-sm mt-2">For power users who want full control and unlimited access.</p>
+            </div>
+            <a href="https://app.cleaninbox.cc/auth/login"
+               class="block w-full text-center bg-gray-900 hover:bg-gray-800 text-white font-medium py-2.5 rounded-lg text-sm transition-colors duration-150 mb-6">
+              Get started
+            </a>
+            <ul class="space-y-3">
+              <li class="flex items-start gap-2.5 text-sm text-gray-600">
+                <svg class="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                Everything in Basic
+              </li>
+              <li class="flex items-start gap-2.5 text-sm text-gray-600">
+                <svg class="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                Unlimited scans &amp; rescans
+              </li>
+              <li class="flex items-start gap-2.5 text-sm text-gray-600">
+                <svg class="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                Advanced text filters &amp; exclusions
+              </li>
+              <li class="flex items-start gap-2.5 text-sm text-gray-600">
+                <svg class="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                Priority email support
+              </li>
+              <li class="flex items-start gap-2.5 text-sm text-gray-600">
+                <svg class="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                Early access to new features
+              </li>
+            </ul>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════
+         PRIVACY & TRUST
+    ═══════════════════════════════════════════════════ -->
+    <section id="privacy" class="py-24 px-6 bg-white">
+      <div class="max-w-5xl mx-auto">
+
+        <!-- Section header -->
+        <div class="reveal text-center mb-16">
+          <p class="text-indigo-600 text-sm font-semibold uppercase tracking-widest mb-3">Privacy &amp; Trust</p>
+          <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">We earn access, not assume it</h2>
+          <p class="mt-4 text-gray-500 text-lg max-w-xl mx-auto">Your inbox is personal. Here's exactly what we access, and exactly what we don't.</p>
+        </div>
+
+        <!-- Two-column trust layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+
+          <!-- What we DO -->
+          <div class="reveal">
+            <h3 class="text-base font-semibold text-gray-900 mb-5 flex items-center gap-2">
+              <span class="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg class="w-3 h-3 text-green-600" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              </span>
+              What we access
+            </h3>
+            <div class="space-y-4">
+              <div class="flex gap-4 p-4 bg-green-50 rounded-xl border border-green-100">
+                <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                <div>
+                  <p class="text-sm font-medium text-gray-900">Email metadata only</p>
+                  <p class="text-xs text-gray-500 mt-0.5">Subject line, sender address, date, size, and Gmail labels — nothing more.</p>
+                </div>
+              </div>
+              <div class="flex gap-4 p-4 bg-green-50 rounded-xl border border-green-100">
+                <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                <div>
+                  <p class="text-sm font-medium text-gray-900">OAuth tokens, encrypted</p>
+                  <p class="text-xs text-gray-500 mt-0.5">Your access token is stored in an encrypted session cookie in your own browser — not on our servers.</p>
+                </div>
+              </div>
+              <div class="flex gap-4 p-4 bg-green-50 rounded-xl border border-green-100">
+                <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                <div>
+                  <p class="text-sm font-medium text-gray-900">Trash permission to delete</p>
+                  <p class="text-xs text-gray-500 mt-0.5">We request permission to move emails to Trash. Nothing is permanently deleted without your explicit confirmation.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- What we DON'T -->
+          <div class="reveal reveal-delay-1">
+            <h3 class="text-base font-semibold text-gray-900 mb-5 flex items-center gap-2">
+              <span class="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg class="w-3 h-3 text-red-600" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+              </span>
+              What we never do
+            </h3>
+            <div class="space-y-4">
+              <div class="flex gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                <svg class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                <div>
+                  <p class="text-sm font-medium text-gray-900">Never read email body content</p>
+                  <p class="text-xs text-gray-500 mt-0.5">The text of your emails and any attachments are completely off-limits.</p>
+                </div>
+              </div>
+              <div class="flex gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                <svg class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                <div>
+                  <p class="text-sm font-medium text-gray-900">Never sell or share your data</p>
+                  <p class="text-xs text-gray-500 mt-0.5">We don't share metadata with advertisers, data brokers, or any third parties.</p>
+                </div>
+              </div>
+              <div class="flex gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                <svg class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                <div>
+                  <p class="text-sm font-medium text-gray-900">Never lock you in</p>
+                  <p class="text-xs text-gray-500 mt-0.5">Revoke access any time from <a href="https://myaccount.google.com/permissions" class="text-indigo-600 hover:underline" target="_blank" rel="noopener">myaccount.google.com/permissions</a>. Instant, permanent.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Open source note -->
+        <div class="reveal reveal-delay-2 mt-12 bg-indigo-50 border border-indigo-100 rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-gray-900">Open source codebase</p>
+            <p class="text-sm text-gray-500 mt-0.5">Our code is open to audit. We believe transparency is the foundation of trust — inspect exactly how we handle your data.</p>
+          </div>
+          <a href="https://github.com" class="sm:ml-auto flex-shrink-0 inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700 text-sm font-medium transition-colors duration-150">
+            View on GitHub
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════
+         FINAL CTA BANNER
+    ═══════════════════════════════════════════════════ -->
+    <section class="py-24 px-6 bg-indigo-600">
+      <div class="max-w-2xl mx-auto text-center">
+        <div class="reveal">
+          <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight">Ready to reclaim your storage?</h2>
+          <p class="mt-4 text-indigo-200 text-lg">Connect your Gmail and see what's in there in under a minute. Free to start — no card needed.</p>
+          <a href="https://app.cleaninbox.cc/auth/login"
+             class="inline-flex items-center gap-3 bg-white hover:bg-indigo-50 text-indigo-700 font-semibold px-8 py-4 rounded-xl text-base mt-8 transition-all duration-150 shadow-lg shadow-indigo-900/20 hover:shadow-xl hover:shadow-indigo-900/30">
+            <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Get Started Free with Google
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════════════════════ -->
+  <footer class="bg-gray-900 text-gray-400 py-12 px-6">
+    <div class="max-w-5xl mx-auto">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <!-- Logo + tagline -->
+        <div>
+          <a href="/" class="flex items-center gap-2 group mb-2">
+            <div class="w-7 h-7 bg-indigo-500 rounded-md flex items-center justify-center">
+              <svg class="text-white" viewBox="0 0 20 20" fill="currentColor" style="width:14px;height:14px;">
+                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+              </svg>
+            </div>
+            <span class="text-white font-semibold text-sm">CleanInbox</span>
+          </a>
+          <p class="text-xs text-gray-500">Built with &#10084;&#65039; for inbox sanity. &copy; 2026 CleanInbox.</p>
+        </div>
+
+        <!-- Links -->
+        <div class="flex items-center gap-6 text-sm">
+          <a href="/landing/privacy.html" class="hover:text-white transition-colors duration-150">Privacy</a>
+          <a href="/landing/tos.html" class="hover:text-white transition-colors duration-150">Terms</a>
+          <a href="mailto:support@cleaninbox.cc" class="hover:text-white transition-colors duration-150">support@cleaninbox.cc</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ─── Scroll-reveal + Nav JS ──────────────────────── -->
+  <script>
+    // Nav scroll effect
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 20) {
+        nav.classList.add('nav-scrolled');
+      } else {
+        nav.classList.remove('nav-scrolled');
+      }
+    }, { passive: true });
+
+    // Intersection Observer for scroll-reveal
+    const revealEls = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, {
+      threshold: 0.1,
+      rootMargin: '0px 0px -40px 0px'
+    });
+
+    revealEls.forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>
