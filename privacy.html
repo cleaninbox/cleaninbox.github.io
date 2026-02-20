@@ -78,7 +78,7 @@
   <!-- ─── Navigation ───────────────────────────────── -->
   <header class="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
     <nav class="max-w-4xl mx-auto px-6 h-15 flex items-center justify-between" style="height:60px;">
-      <a href="/landing/index.html" class="flex items-center gap-2.5 group">
+      <a href="/" class="flex items-center gap-2.5 group">
         <div class="w-7 h-7 bg-indigo-600 rounded-md flex items-center justify-center shadow-sm">
           <svg class="text-white" viewBox="0 0 20 20" fill="currentColor" style="width:14px;height:14px;">
             <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
@@ -87,7 +87,7 @@
         </div>
         <span class="font-semibold text-gray-900 text-[15px] tracking-tight">CleanInbox</span>
       </a>
-      <a href="/landing/index.html"
+      <a href="/"
          class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors duration-150">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
@@ -161,10 +161,11 @@
           <li>Email headers used for categorization (e.g., List-Unsubscribe, Precedence)</li>
         </ul>
 
-        <h3>Gmail API scopes we request:</h3>
+        <h3>Google API scopes we request:</h3>
         <ul>
-          <li><strong>gmail.readonly</strong> — to read metadata for scanning and categorization</li>
-          <li><strong>gmail.modify</strong> — to move emails to Trash when you request deletion</li>
+          <li><strong>gmail.modify</strong> — to read email metadata for scanning and categorization, and to move emails to Trash when you request deletion</li>
+          <li><strong>drive.metadata.readonly</strong> — to display your Google storage usage (how much space is used vs. available)</li>
+          <li><strong>userinfo.email</strong> and <strong>userinfo.profile</strong> — to display your name and email in the app</li>
         </ul>
 
         <!-- 3. What we don't access -->
@@ -173,7 +174,7 @@
         <ul>
           <li>We never read the body content of any email</li>
           <li>We never open, download, or inspect email attachments</li>
-          <li>We never access emails in other Google Workspace apps (Drive, Docs, Calendar, etc.)</li>
+          <li>We never access files in Google Drive, Docs, Calendar, or other Workspace apps (we only read your storage quota from the Drive API)</li>
           <li>We never access your Google contacts</li>
           <li>We never request or store your Google account password</li>
           <li>We never access your Google account profile beyond your name and email address (used for display purposes only)</li>
@@ -186,26 +187,29 @@
           <li><strong>Scanning:</strong> We query Gmail API to retrieve email metadata and count, size, and categorize messages.</li>
           <li><strong>Categorization:</strong> We analyze metadata (labels, headers, sender patterns) to group emails into categories like Newsletters, Promotions, Large Attachments, and Social.</li>
           <li><strong>Deletion:</strong> When you choose to delete emails, we call the Gmail API to move those specific message IDs to Trash (or permanently delete, if you explicitly choose that option).</li>
-          <li><strong>Session state:</strong> We store a minimal session to keep you logged in during your session. This includes your OAuth token, your display name and email, and scan results — all stored in an encrypted browser cookie.</li>
+          <li><strong>Session state:</strong> We store a minimal server-side session to keep you logged in. This includes your display name, email, and scan settings. Your session expires automatically after 24 hours.</li>
+          <li><strong>Storage display:</strong> We query the Google Drive API to show how much of your Google storage is used. We only read the quota — we never access your Drive files.</li>
         </ul>
         <p>We do not use your email data to train machine learning models, build advertising profiles, or for any purpose other than the direct delivery of the CleanInbox service.</p>
 
         <!-- 5. Data retention -->
         <h2>5. Data Retention</h2>
-        <p>We are designed to be stateless and to retain as little data as possible.</p>
+        <p>We retain as little data as possible and for the shortest time necessary.</p>
         <ul>
-          <li><strong>Scan results</strong> are cached in server memory only for the duration of your active session. They are discarded when you log out or your session expires (24 hours maximum).</li>
-          <li><strong>OAuth tokens</strong> are stored in an encrypted session cookie in your browser. They are never written to a persistent database. When you log out, the cookie is deleted.</li>
-          <li><strong>Email metadata</strong> is retrieved on-demand from Gmail and never persisted to disk or database on our servers.</li>
+          <li><strong>Scan results</strong> are cached on our server for the duration of your active session. They are discarded when you log out or your session expires (24 hours maximum).</li>
+          <li><strong>OAuth tokens</strong> are encrypted at rest using AES-256 (Fernet) and stored in our database. When you log out or revoke access, they are deleted.</li>
+          <li><strong>Email metadata</strong> is retrieved on-demand from Gmail for display during your session. It is not stored permanently beyond the session cache.</li>
+          <li><strong>Account data</strong> includes your email address, display name, and subscription tier. This is stored as long as your account exists.</li>
           <li><strong>Log files</strong> may capture anonymized request metadata (timestamps, error types) for operational purposes. These do not contain email content or personal identifiers.</li>
         </ul>
 
         <!-- 6. Third parties -->
         <h2>6. Third-Party Services</h2>
         <p>We do not sell, rent, or share your personal data or email metadata with any third parties for any commercial purpose.</p>
-        <p>The only third-party service we interact with is:</p>
+        <p>The third-party services we use are:</p>
         <ul>
-          <li><strong>Google Gmail API</strong> — we query Gmail on your behalf, using the OAuth token you granted. Google's privacy practices are governed by <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a>.</li>
+          <li><strong>Google Gmail &amp; Drive APIs</strong> — we query Gmail and Drive on your behalf, using the OAuth token you granted. Google's privacy practices are governed by <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a>.</li>
+          <li><strong>Stripe</strong> — our payment processor for subscriptions. Stripe receives your email address to create a customer record and process payments. Stripe does not receive any email metadata or scan data. Stripe's privacy practices are governed by <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe's Privacy Policy</a>.</li>
         </ul>
         <p>We may use infrastructure providers (hosting, CDN) to operate the service. These providers process data only as necessary to deliver our service and are bound by appropriate data processing agreements.</p>
 
@@ -214,7 +218,8 @@
         <p>We take the security of your data seriously:</p>
         <ul>
           <li>All communication between your browser and our servers is encrypted via TLS/HTTPS.</li>
-          <li>Your OAuth access token is stored exclusively in an encrypted, HTTP-only browser cookie using industry-standard cryptographic signing (itsdangerous / HMAC-SHA256).</li>
+          <li>OAuth tokens are encrypted at rest using Fernet (AES-256-CBC with HMAC) before being stored in our database. They are decrypted only when needed to make API calls on your behalf.</li>
+          <li>Sessions use cryptographically random tokens stored in HTTP-only, Secure, SameSite cookies.</li>
           <li>We do not store credentials, tokens, or sensitive data in plaintext anywhere in our system.</li>
           <li>We follow the principle of least privilege — requesting only the OAuth scopes necessary for the service to function.</li>
         </ul>
@@ -267,7 +272,7 @@
     <div class="max-w-4xl mx-auto">
       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div>
-          <a href="/landing/index.html" class="flex items-center gap-2 mb-2">
+          <a href="/" class="flex items-center gap-2 mb-2">
             <div class="w-7 h-7 bg-indigo-500 rounded-md flex items-center justify-center">
               <svg class="text-white" viewBox="0 0 20 20" fill="currentColor" style="width:14px;height:14px;">
                 <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
